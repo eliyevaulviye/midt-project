@@ -1,5 +1,65 @@
 ## Team Name - Risk Masters 
 
+# Daily increments 
+Member 1  → day_01, day_02, day_03, day_05
+
+Member 2  → day_04, day_07
+
+Member 3  → day_08
+
+Member 4  → day_06
+
+
+# Sources 
+member 1; config.py, ingestion.py, cleaning.py, pipeline.py
+
+member 2; features.py, 
+
+member 3; quality.checks.py
+
+member 4; reports.py
+
+
+# Tables
+raw_cotton                  725 rows    3 cols  ← Member 1
+
+raw_weather               45655 rows   13 cols  ← Member 1
+
+clean_cotton                XXX rows    4 cols  ← Member 1
+
+clean_weather             45655 rows   13 cols  ← Member 1
+
+features                    XXX rows   56 cols  ← Member 2
+
+features_with_risk          XXX rows   67 cols  ← Member 2
+
+
+
+
+# Notebook names
+Day 1 – Project Kick-Off & API Exploration
+        → day_01_exploration.ipynb        
+        
+Day 2 – Data Ingestion Pipeline
+        → day_02_ingestion.ipynb        
+
+Day 3 – Database Design & Data Loading
+        → day_03_database.ipynb         
+
+Day 4 – Data Cleaning & Feature Engineering
+        → day_04_cleaning_features.ipynb  
+
+Day 5 – Week 1 Checkpoint
+        → day_05_checkpoint.ipynb         
+
+Day 6 – Exploratory Data Analysis
+        → day_06_eda.ipynb             
+
+Day 7 – Statistical Analysis & Feature Selection
+        → day_07_statistics.ipynb         
+
+Day 8 – Predictive Modeling & Evaluation
+        → day_08_modeling.ipynb           
 
 
 ## 1. Problem Definition
