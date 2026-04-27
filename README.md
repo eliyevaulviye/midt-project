@@ -1,271 +1,131 @@
-## Team Name - Risk Masters 
+## Team Name - Risk Masters  
 
-# Daily increments 
-Member 1  → day_01, day_02, day_03, day_05
+# Daily increments (notebooks) 
 
-Member 2  → day_04, day_07
+Member 1  → day_01_exploration.ipynb, day_02_ingestion.ipynb, day_03_database.ipynb, day_05_checkpoint.ipynb
 
-Member 3  → day_08
+Member 2  → day_04_cleaning_features.ipynb, day_07_statistics.ipynb
 
-Member 4  → day_06
+Member 3  → day_08_modeling.ipynb 
+
+Member 4  → day_06_eda.ipynb
 
 
 # Sources 
+
 member 1; config.py, ingestion.py, cleaning.py, pipeline.py
 
 member 2; features.py, 
 
 member 3; quality.checks.py
 
-member 4; reports.py
-
+member 4; reports.py 
 
 # Tables
-raw_cotton                  725 rows    3 cols  ← Member 1
 
-raw_weather               45655 rows   13 cols  ← Member 1
+Member 1; raw_cotton, raw_weather, clean_cotton, clean_weather
 
-clean_cotton                XXX rows    4 cols  ← Member 1
-
-clean_weather             45655 rows   13 cols  ← Member 1
-
-features                    XXX rows   56 cols  ← Member 2
-
-features_with_risk          XXX rows   67 cols  ← Member 2
-
-
-
-
-# Notebook names
-Day 1 – Project Kick-Off & API Exploration
-        → day_01_exploration.ipynb        
-        
-Day 2 – Data Ingestion Pipeline
-        → day_02_ingestion.ipynb        
-
-Day 3 – Database Design & Data Loading
-        → day_03_database.ipynb         
-
-Day 4 – Data Cleaning & Feature Engineering
-        → day_04_cleaning_features.ipynb  
-
-Day 5 – Week 1 Checkpoint
-        → day_05_checkpoint.ipynb         
-
-Day 6 – Exploratory Data Analysis
-        → day_06_eda.ipynb             
-
-Day 7 – Statistical Analysis & Feature Selection
-        → day_07_statistics.ipynb         
-
-Day 8 – Predictive Modeling & Evaluation
-        → day_08_modeling.ipynb           
+Member 2; features, features_with_risk
 
 
 ## 1. Problem Definition
 
+Cotton production in Azerbaijan is a vital economic sector, yet it remains highly vulnerable to unpredictable weather patterns and localized environmental stressors. Traditional planning often relies on historical averages, which fail to account for the specific risks associated with different growth stages (planting, flowering, harvesting).
 
 ### What we built:
-A machine learning system that predicts cotton yield (in tonnes) for 29 districts of Azerbaijan for the year 2025, and also estimates how risky each growth stage of the cotton season will be.
 
+A machine learning system that predicts **cotton yield (in tonnes) for 29 districts of Azerbaijan for the year 2025 and 2026**, and also estimates **how risky each growth stage of the cotton season will be**. 
+
+### Targets;
+
+Predict cotton yield (tonnes) for 29 districts of Azerbaijan for 2025–2026
+Estimate risk levels for each growth stage of the cotton season 
+
+## Features
+
+Daily weather metrics (max/min/mean temp, precipitation, humidity, wind speed, ET0) and historical yield trends.
+
+
+## Prediction Horizon
+
+Seasonal/Yearly (Forecasting for 2025–2026).
+
+
+### Why it matters 
+
+This matters because it replaces guesswork with data-driven planning for cotton production. By predicting yield across districts, stakeholders can better plan supply, logistics, and exports. The risk estimates highlight vulnerable growth stages, allowing early preventive actions. Overall, it helps reduce losses and improve decision-making. 
 
 ## 2. Data Sources
-
 
 Source 1 — Cotton Production Dataset  
 
 - 29 districts × 25 years (2000–2024) = 725 observations
 - Values are annual cotton yield in tonnes per district
-- Had 191 missing values which we filled using each region's own historical average so we didn't lose those rows
+- Had 191 missing values and we deleted all districts with at least one missing value, and there are 15 districts left. 
 
 
 Source 2 — Open-Meteo Historical Weather API 
 
 - We pulled daily weather for 5 weather station locations across Azerbaijan: Ganja, Sabirabad, Lankaran, Shamkir, Nakhchivan
 - Variables collected: max/min/mean temperature, precipitation, humidity, wind speed, evapotranspiration (ET0)
-- 25 years × 365 days × 5 locations = ~45,000 daily rows
-
-
-
-## 3. The Core Problem — Joining Two Datasets
-
-
-### Solution — Region to Weather Station Mapping
-#### We geographically mapped every district to its nearest weather station: 
-
-
-- Ganja station covers 16 central and western districts
-- Sabirabad station covers 7 Kür-Araz lowland districts
-- Lankaran station covers 4 southern districts
-- Jabrayil and Lachin were mapped to nearest available stations
-
-
-
-## 4. Feature Engineering — The Bridge Between Weather and Yield
-
-
-#### Raw daily weather data cannot go directly into a machine learning model meaningfully
-
-
-
-### Solution — Growth Stage Aggregation
-#### Cotton has 4 distinct biological growth stages, and weather affects yield differently in each one:
-
-
-| Stage         | Months              | What matters                                      |
-|--------------|--------------------|--------------------------------------------------|
-| Planting     | March–April        | Temperature must be warm enough to germinate     |
-| Growing      | May–August         | Heat accumulation, drought stress, GDD           |
-| Boll Forming | August–September   | Extreme heat damages bolls                       |
-| Harvest      | September–November | Rain and humidity ruin picking conditions        |
-
-
-
-#### For each stage we calculated aggregated features like mean temperature, total rainfall, heat stress days (days above 35°C), dry streaks, humidity and most importantly Growing Degree Days (GDD).
-
-
-
-
-```
-planting_avg_temp    = mean(daily temp, March–April)
-planting_total_rain  = sum(daily rain, March–April)
-growing_avg_temp     = mean(daily temp, June–August)
-growing_total_rain   = sum(daily rain, June–August)
-growing_heat_stress  = count(days where temp > 35°C, June–August)
-harvest_dry_days     = count(days where rain < 1mm, Sep–Nov)
-... etc.
-```
-
-### What is GDD? 
-
-
-What is GDD?
-GDD is the standard agricultural measure of heat energy accumulated by a crop. For each day: **GDD = ((max_temp + min_temp) / 2) - 15.5°C**. The total GDD across the growing season tells us **how much energy the cotton plant received to develop**. It's far more meaningful than raw temperature alone.
-
-
-##### This process turned 365 daily rows per location per year into roughly **52 meaningful features per district per year**  — one row in our final ML dataset.
-
-
-## 5. Risk Label Creation
-
-
-```
-Year 2025, Ganja Region:
-  🟡 Planting Stage     — 34% risk  (slightly cold, low moisture)
-  🔴 Growing Stage      — 78% risk  (heat stress very likely)
-  🟢 Boll Formation     — 12% risk  (conditions look normal)
-  🟡 Harvest Stage      — 45% risk  (rain probability moderate)
-
-  → Predicted Yield: 3,800 tonnes  (↓ 18% below average)
-```
-
-
-##### How we defined risk:
-##### We used two approaches together:
-
-##### Threshold based: agronomic thresholds like "more than 10 days above 35°C during growing season = risky"
-##### Yield based: a year was labeled risky if the yield dropped more than 0.5 standard deviations below that district's own historical average
-
-
-
-## 6. Machine Learning Architecture
-
-
-```
-We built 5 models total:
-4 Risk Classifiers (one per growth stage)
-
-Algorithm: Random Forest Classifier
-Input: weather features for that stage
-Output: probability of that stage being risky (0–100%)
-These run first and their output becomes additional features for the yield model
-
-1 Yield Regression Model
-
-Algorithm: XGBoost Regressor (won against Random Forest)
-Input: all 52 weather features + 4 risk probability scores from classifiers
-Output: predicted yield in tonnes 
-```
-
-
-```
-Train/test split:
-We trained on years 2000–2021 and tested on 2022–2024. We deliberately split by year rather than randomly because you cannot train on future data and test on past data — that would be data leakage and give artificially perfect results.
-```
-
-
-## 7. Model Performance
-
-
-```
-Is this good?
-For a model using only weather data with no soil quality, irrigation, fertilizer or farming practice data — R²=0.576 is a solid result. The remaining 42% of variance is likely explained by non-weather factors we don't have access to.
-```
-
-
-## 8. 2025 Predictions
-
-
-```
-Overall:
-
-Total predicted yield across all 29 districts: 494 tonnes
-Historical average: 518 tonnes
-Predicted change: -4.5% decline
-```
-
-
-```
-Key findings:
-
-Ganja and Sabirabad zones face 92–96% growing season risk due to heat stress — the dominant threat for 2025
-Lankaran zone (southern humid region) shows a completely different pattern — low heat risk but 64% harvest risk from rainfall and humidity
-Jalilabad district faces the biggest predicted drop at -24.6%
-Aghdara district is the top producer at 37 tonnes predicted
-```
-
-
-## 9. Limitations 
-
-
-```
-Every good project acknowledges its limitations:
-
-Only weather features — no soil data, irrigation records, fertilizer use or farming practice data which all affect yield significantly
-5 stations for 29 districts — districts sharing a weather station get identical weather features, which loses regional variation within zones
-Small dataset — 725 rows is limited for machine learning; more years or more crops would improve the model
-Risk classifier imbalance — planting and harvest risk classifiers had very few risky cases in the 2022–2024 test period, so their test accuracy is misleading
-2025 future months — since we're predicting a full year but the growing season isn't finished, the future months were filled using climatological averages from 2024 rather than actual forecasts
-```
-
-## 10. What Makes This Project Valuable
-
-
-```
-It combines real government agricultural data with real-time weather API data
-It is explainable — you can tell a farmer not just "yield will be low" but specifically "because growing season heat stress is at 96% risk"
-It covers all 29 cotton-producing districts of Azerbaijan simultaneously
-The pipeline is reusable — next year you run one script and get updated predictions
-It can be extended to other crops (wheat, vegetables) by changing growth stage definitions and retraining
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- 25 years × 365 days × 5 locations = ~45,000 daily rows 
+
+
+
+
+
+## 👥 Team: Risk Masters – Roles & Responsibilities
+
+The project was divided into four specialized streams to ensure a robust end-to-end data pipeline, from raw API ingestion to predictive modeling and visual reporting.
+
+### **Esli Ehmedova | Data Engineer**
+* **Role:** Lead Architect for the "Raw to Clean" pipeline and project infrastructure.
+* **Core Tasks:**
+    * **Project Setup:** Established the directory structure and environment requirements.
+    * **Data Collection:** Automated the retrieval of 24 years of historical weather data via APIs for strategic regions (Ganja, Shamkir, Sabirabad, etc.).
+    * **Data Reshaping:** Transformed the cotton production dataset from wide format (years as columns) to long format (tidy data) for machine learning readiness.
+    * **Data Cleaning:** Managed missing value imputation, outlier detection, and temporal alignment between weather and yield datasets.
+* **Key Files:** `config.py`, `ingestion.py`, `cleaning.py`, `pipeline.py`
+
+### **Narmin Dirayeva | Agro-Analyst & Feature Engineer**
+* **Role:** Technical lead for translating agricultural science into mathematical features.
+* **Core Tasks:**
+    * **Growth Stages:** Defined specific windows for Planting, Vegetative, Boll Forming, and Harvest stages.
+    * **GDD Calculation:** Implemented Growing Degree Days (GDD) formulas specific to cotton biology (Base 15.5°C).
+    * **Advanced Features:** Engineered specialized metrics including heat stress days, frost days, and dry streaks per growth stage.
+    * **Risk Logic:** Developed the mathematical logic and thresholds for risk labels (binary) and risk percentages (0-100%).
+* **Key Files:** `features.py`
+
+### **Khaver Gasimova | Machine Learning Engineer**
+* **Role:** Lead for training, tuning, and evaluating predictive performance.
+* **Core Tasks:**
+    * **Risk Modeling:** Developed and trained four separate models to assess risk for each individual growth stage.
+    * **Yield Prediction:** Built the primary predictive engine (XGBoost/LightGBM) to forecast annual tonnage.
+    * **Feature Integration:** Integrated the risk scores from stage-specific models as meta-features for the final yield model.
+    * **Evaluation:** Generated comprehensive metrics (RMSE, MAE, Accuracy) and managed model serialization via `joblib`.
+* **Key Files:** `quality.checks.py`, `model_registry/`
+
+### **Ulviyya Aliyeva | Data Analyst & Visualizer**
+* **Role:** Lead for pattern discovery and stakeholder communication.
+* **Core Tasks:**
+    * **Exploratory Data Analysis (EDA):** Created deep-dive visualizations including correlation heatmaps and scatter plots (e.g., GDD vs. Yield impact).
+    * **Regional Comparisons:** Analyzed and visualized yield variance and averages across different regions of Azerbaijan.
+    * **Forecast Reporting:** Designed the output interface and dashboards for 2025–2026 predictions.
+    * **Documentation:** Compiled the final methodology, project limitations, and future scalability roadmap.
+* **Key Files:** `reports.py`
+
+---
+
+## 📅 Daily Activities (Technical Workflow)
+
+Our team followed a sequential "Daily Increment" sprint to build the system from the ground up:
+
+| Day | Phase | Activity & Ownership |
+| :--- | :--- | :--- |
+| **Day 01-02** | **Exploration & Ingestion** | Initial API connection tests and raw CSV sourcing (Esli). |
+| **Day 03** | **Data Architecture** | SQL/Database schema setup and dataset reshaping (Esli). |
+| **Day 04** | **Agro-Feature Engineering** | Calculating GDD and defining growth stage windows (Narmin). |
+| **Day 05** | **Data Checkpoint** | Validating cleaned data and merging weather/yield tables (Esli). |
+| **Day 06** | **EDA & Insights** | Visualizing correlations and regional yield trends (Ulviyya). |
+| **Day 07** | **Statistical Logic** | finalizing Risk Percentage logic and stage-based labeling (Narmin). |
+| **Day 08** | **ML Modeling** | Training XGBoost models and evaluating error metrics (Khaver). |
